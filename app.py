@@ -12,15 +12,20 @@ st.set_page_config(
 )
 
 # ── Load artifacts ──────────────────────────────────────────────────────────────
+# ── Load artifacts ──────────────────────────────────────────────────────────────
 @st.cache_resource
 def load_artifacts():
     model = pickle.load(open("models/random_forest_model.pkl", "rb"))
-scaler = pickle.load(open("models/standard_scaler.pkl", "rb"))
+    scaler = pickle.load(open("models/standard_scaler.pkl", "rb"))
 
     with open("models/meta.json", "r") as f:
         meta = json.load(f)
 
     return model, scaler, meta
+
+model, scaler, meta = load_artifacts()
+le_mappings = meta["le_mappings"]
+final_features = meta["final_features"]
 
 # ── Header ──────────────────────────────────────────────────────────────────────
 st.title("📡 Telco Customer Churn Predictor")
