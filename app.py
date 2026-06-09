@@ -14,8 +14,8 @@ st.set_page_config(
 # ── Load artifacts ──────────────────────────────────────────────────────────────
 @st.cache_resource
 def load_artifacts():
-    model = pickle.load(open("models/model.pkl", "rb"))
-    scaler = pickle.load(open("models/scaler.pkl", "rb"))
+    model = pickle.load(open("models/random_forest_model.pkl", "rb"))
+scaler = pickle.load(open("models/standard_scaler.pkl", "rb"))
 
     with open("models/meta.json", "r") as f:
         meta = json.load(f)
@@ -63,9 +63,6 @@ with st.form("prediction_form"):
 
 # ── Prediction ──────────────────────────────────────────────────────────────────
 def encode(feature, value):
-    st.write("Feature:", feature)
-    st.write("Value:", value)
-    st.write("Available Mapping:", le_mappings.get(feature))
     return le_mappings[feature][value]
 
 if submitted:
