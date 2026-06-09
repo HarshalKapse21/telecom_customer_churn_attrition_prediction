@@ -1,191 +1,141 @@
 import streamlit as st
-import pickle
 import pandas as pd
+import numpy as np
+import pickle
+import json
 
-# -------------------------------
-# Page configuration
-# -------------------------------
+# ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Telecom Customer Churn Prediction",
-    page_icon="📞",
-    layout="centered"
+    page_title="Telco Churn Predictor",
+    page_icon="📡",
+    layout="wide",
 )
 
-# -------------------------------
-# Load model and scaler
-# -------------------------------
+# ── Load artifacts ──────────────────────────────────────────────────────────────
 @st.cache_resource
-def load_files():
-    # Load trained Random Forest model
-    with open("models/random_forest_model.pkl", "rb") as file:
-        model_random = pickle.load(file)
+def load_artifacts():
+    model = pickle.load(open("models/model.pkl", "rb"))
+    scaler = pickle.load(open("models/scaler.pkl", "rb"))
 
-    # Load label encoder file
-    with open("models/label_encoder.pkl", "rb") as f:
-        label_encoders = pickle.load(f)
+    with open("models/meta.json", "r") as f:
+        meta = json.load(f)
 
-    # Load standard scaler
-    with open("models/standard_scaler.pkl", "rb") as f:
-        scaler = pickle.load(f)
+    return model, scaler, meta
 
-    return model_random, label_encoders, scaler
+# ── Header ──────────────────────────────────────────────────────────────────────
+st.title("📡 Telco Customer Churn Predictor")
+st.markdown(
+    "Fill in the customer details below and click **Predict** to see whether "
+    "this customer is likely to churn."
+)
+st.divider()
 
-
-model_random, label_encoders, scaler = load_files()
-
-# -------------------------------
-# App title
-# -------------------------------
-st.title("📞 Telecom Customer Churn Prediction")
-st.write("Enter customer details below to predict whether the customer is likely to churn or continue.")
-
-# -------------------------------
-# User input form
-# -------------------------------
+# ── Input form ──────────────────────────────────────────────────────────────────
 with st.form("prediction_form"):
+    col1, col2, col3 = st.columns(3)
 
-    international_plan = st.selectbox(
-        "International Plan",
-        ["yes", "no"]
-    )
+    with col1:
+        st.subheader("👤 Customer Info")
+        senior_citizen   = st.selectbox("Senior Citizen",   ["No", "Yes"])
+        partner          = st.selectbox("Has Partner",       ["No", "Yes"])
+        dependents       = st.selectbox("Has Dependents",    ["No", "Yes"])
+        tenure           = st.slider("Tenure (months)",      0, 72, 12)
 
-    voice_mail_plan = st.selectbox(
-        "Voice Mail Plan",
-        ["yes", "no"]
-    )
+    with col2:
+        st.subheader("🔒 Services")
+        online_security  = st.selectbox("Online Security",   ["No", "No internet service", "Yes"])
+        online_backup    = st.selectbox("Online Backup",     ["No", "No internet service", "Yes"])
+        device_protect   = st.selectbox("Device Protection", ["No", "No internet service", "Yes"])
+        tech_support     = st.selectbox("Tech Support",      ["No", "No internet service", "Yes"])
 
-    account_length = st.number_input(
-        "Account Length",
-        min_value=0,
-        value=100,
-        step=1
-    )
+    with col3:
+        st.subheader("💳 Billing")
+        contract         = st.selectbox("Contract Type",     ["Month-to-month", "One year", "Two year"])
+        paperless        = st.selectbox("Paperless Billing", ["No", "Yes"])
+        payment_method   = st.selectbox("Payment Method",    [
+            "Bank transfer (automatic)", "Credit card (automatic)",
+            "Electronic check", "Mailed check"
+        ])
+        monthly_charges  = st.number_input("Monthly Charges ($)", 0.0, 200.0, 65.0, step=0.5)
+        total_charges    = st.number_input("Total Charges ($)",    0.0, 10000.0, monthly_charges * tenure, step=1.0)
 
-    number_vmail_messages = st.number_input(
-        "Number of Voicemail Messages",
-        min_value=0.0,
-        value=0.0,
-        step=1.0
-    )
+    submitted = st.form_submit_button("🔍 Predict Churn", use_container_width=True)
 
-    total_day_minutes = st.number_input(
-        "Total Day Minutes",
-        min_value=0.0,
-        value=100.0,
-        step=1.0
-    )
+# ── Prediction ──────────────────────────────────────────────────────────────────
+def encode(feature, value):
+    return le_mappings[feature][value]
 
-    total_day_calls = st.number_input(
-        "Total Day Calls",
-        min_value=0.0,
-        value=100.0,
-        step=1.0
-    )
-
-    total_eve_minutes = st.number_input(
-        "Total Evening Minutes",
-        min_value=0.0,
-        value=100.0,
-        step=1.0
-    )
-
-    total_eve_calls = st.number_input(
-        "Total Evening Calls",
-        min_value=0.0,
-        value=100.0,
-        step=1.0
-    )
-
-    total_night_minutes = st.number_input(
-        "Total Night Minutes",
-        min_value=0.0,
-        value=100.0,
-        step=1.0
-    )
-
-    total_night_calls = st.number_input(
-        "Total Night Calls",
-        min_value=0.0,
-        value=100.0,
-        step=1.0
-    )
-
-    total_intl_minutes = st.number_input(
-        "Total International Minutes",
-        min_value=0.0,
-        value=10.0,
-        step=1.0
-    )
-
-    total_intl_calls = st.number_input(
-        "Total International Calls",
-        min_value=0.0,
-        value=3.0,
-        step=1.0
-    )
-
-    customer_service_calls = st.number_input(
-        "Customer Service Calls",
-        min_value=0.0,
-        value=1.0,
-        step=1.0
-    )
-
-    submitted = st.form_submit_button("Predict")
-
-
-# -------------------------------
-# Prediction logic
-# -------------------------------
 if submitted:
+    # Build raw input dict (only final_features used by the model)
+    raw = {
+        "SeniorCitizen":    1 if senior_citizen == "Yes" else 0,
+        "Partner":          encode("Partner",          partner),
+        "Dependents":       encode("Dependents",       dependents),
+        "tenure":           tenure,
+        "OnlineSecurity":   encode("OnlineSecurity",   online_security),
+        "OnlineBackup":     encode("OnlineBackup",     online_backup),
+        "DeviceProtection": encode("DeviceProtection", device_protect),
+        "TechSupport":      encode("TechSupport",      tech_support),
+        "Contract":         encode("Contract",         contract),
+        "PaperlessBilling": encode("PaperlessBilling", paperless),
+        "PaymentMethod":    encode("PaymentMethod",    payment_method),
+        "MonthlyCharges":   monthly_charges,
+        "TotalCharges":     total_charges,
+    }
 
-    # Manual encoding
-    # yes = 1, no = 0
-    international_plan_encoded = 1 if international_plan == "yes" else 0
-    voice_mail_plan_encoded = 1 if voice_mail_plan == "yes" else 0
+    input_df = pd.DataFrame([raw])[final_features]
+    input_scaled = scaler.transform(input_df)
 
-    # Create input dataframe
-    input_df = pd.DataFrame({
-        "International plan": [international_plan_encoded],
-        "Voice mail plan": [voice_mail_plan_encoded],
-        "Account length": [account_length],
-        "Number vmail messages": [number_vmail_messages],
-        "Total day minutes": [total_day_minutes],
-        "Total day calls": [total_day_calls],
-        "Total eve minutes": [total_eve_minutes],
-        "Total eve calls": [total_eve_calls],
-        "Total night minutes": [total_night_minutes],
-        "Total night calls": [total_night_calls],
-        "Total intl minutes": [total_intl_minutes],
-        "Total intl calls": [total_intl_calls],
-        "Customer service calls": [customer_service_calls]
-    })
+    prediction  = model.predict(input_scaled)[0]
+    probability = model.predict_proba(input_scaled)[0]
+    churn_prob  = probability[1] * 100
+    stay_prob   = probability[0] * 100
 
-    # Numerical columns for scaling
-    numerical_cols = [
-        "Account length",
-        "Number vmail messages",
-        "Total day minutes",
-        "Total day calls",
-        "Total eve minutes",
-        "Total eve calls",
-        "Total night minutes",
-        "Total night calls",
-        "Total intl minutes",
-        "Total intl calls",
-        "Customer service calls"
-    ]
+    st.divider()
+    st.subheader("🎯 Prediction Result")
 
-    # Apply scaling
-    input_df[numerical_cols] = scaler.transform(input_df[numerical_cols])
+    res_col1, res_col2, res_col3 = st.columns(3)
 
-    # Make prediction
-    prediction = model_random.predict(input_df)
+    with res_col1:
+        if prediction == 1:
+            st.error("⚠️ **HIGH CHURN RISK**\nThis customer is likely to churn.")
+        else:
+            st.success("✅ **LOW CHURN RISK**\nThis customer is likely to stay.")
 
-    # Show result
-    st.subheader("Prediction Result")
+    with res_col2:
+        st.metric("Churn Probability",  f"{churn_prob:.1f}%")
+        st.metric("Retention Probability", f"{stay_prob:.1f}%")
 
-    if prediction[0] == 1:
-        st.error("This customer is likely to churn!")
-    else:
-        st.success("The customer is likely to continue!")
+    with res_col3:
+        # Risk breakdown
+        if churn_prob >= 70:
+            risk_label, risk_color = "🔴 High Risk", "red"
+        elif churn_prob >= 40:
+            risk_label, risk_color = "🟡 Medium Risk", "orange"
+        else:
+            risk_label, risk_color = "🟢 Low Risk", "green"
+        st.markdown(f"### Risk Level\n# {risk_label}")
+
+    # Key factors
+    st.divider()
+    st.subheader("📋 Key Customer Snapshot")
+    snap_col1, snap_col2, snap_col3, snap_col4 = st.columns(4)
+    snap_col1.metric("Tenure",           f"{tenure} months")
+    snap_col2.metric("Monthly Charges",  f"${monthly_charges:.2f}")
+    snap_col3.metric("Contract Type",    contract)
+    snap_col4.metric("Total Charges",    f"${total_charges:.2f}")
+
+# ── Footer / instructions ───────────────────────────────────────────────────────
+st.divider()
+with st.expander("ℹ️ About this model"):
+    st.markdown("""
+    **Model:** Random Forest Classifier
+
+    **Pipeline:**
+    - SMOTE oversampling to address class imbalance (~73% Not-Churn vs 27% Churn)
+    - Label encoding for categorical features
+    - StandardScaler for all features
+    - Low-importance features dropped: `PhoneService`, `gender`, `StreamingTV`, `StreamingMovies`, `MultipleLines`, `InternetService`
+
+    **Dataset:** IBM Watson Telco Customer Churn — 7,032 customers, 20 features.
+    """)
