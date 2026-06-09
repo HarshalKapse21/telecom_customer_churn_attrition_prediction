@@ -68,7 +68,55 @@ with st.form("prediction_form"):
 
 # ── Prediction ──────────────────────────────────────────────────────────────────
 def encode(feature, value):
-    return le_mappings[feature][value]
+
+    mappings = {
+        "Partner": {"No": 0, "Yes": 1},
+        "Dependents": {"No": 0, "Yes": 1},
+
+        "OnlineSecurity": {
+            "No": 0,
+            "No internet service": 1,
+            "Yes": 2
+        },
+
+        "OnlineBackup": {
+            "No": 0,
+            "No internet service": 1,
+            "Yes": 2
+        },
+
+        "DeviceProtection": {
+            "No": 0,
+            "No internet service": 1,
+            "Yes": 2
+        },
+
+        "TechSupport": {
+            "No": 0,
+            "No internet service": 1,
+            "Yes": 2
+        },
+
+        "Contract": {
+            "Month-to-month": 0,
+            "One year": 1,
+            "Two year": 2
+        },
+
+        "PaperlessBilling": {
+            "No": 0,
+            "Yes": 1
+        },
+
+        "PaymentMethod": {
+            "Bank transfer (automatic)": 0,
+            "Credit card (automatic)": 1,
+            "Electronic check": 2,
+            "Mailed check": 3
+        }
+    }
+
+    return mappings[feature][value]
 
 if submitted:
     # Build raw input dict (only final_features used by the model)
