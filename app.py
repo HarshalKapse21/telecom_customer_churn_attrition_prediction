@@ -62,7 +62,7 @@ with st.form("prediction_form"):
     submitted = st.form_submit_button("🔍 Predict Churn", use_container_width=True)
 
 # ── Prediction ──────────────────────────────────────────────────────────────────
-ddef encode(feature, value):
+def encode(feature, value):
     st.write("Feature:", feature)
     st.write("Value:", value)
     st.write("Available Mapping:", le_mappings.get(feature))
