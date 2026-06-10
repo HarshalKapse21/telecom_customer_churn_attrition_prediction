@@ -199,8 +199,8 @@ After deployment, Streamlit Cloud generated a public application URL that can be
 **Deployed Application:**  
 ## Live App
 
-[Teleco_customer_churn_attrition_app](https://harshalkapse21-telecom-customer-churn-attrition-pred-app-pcphb6.streamlit.app/#prediction-result)
-
+[Teleco_customer_churn_attrition_app][(https://harshalkapse21-telecom-customer-churn-attrition-pred-app-pcphb6.streamlit.app/#prediction-result)
+](https://harshalkapse21-telecom-customer-churn-attrition-pred-app-p92zdo.streamlit.app/)
 =======
 ### Dataset Usage
 
