@@ -134,7 +134,7 @@ Explore interactive Power BI visualizations designed to enhance data exploration
 - **Clone the Repository**
 
   ```` 
-   git clone https://github.com/HarshalKapse21/teleco_customer_churn_attrition_prediction.git
+   git clone https://github.com/HarshalKapse21/telecom_customer_churn_attrition_prediction.git
    cd teleco-customer-churn-attrition-prediction
    ````
 
@@ -185,7 +185,6 @@ The complete project files were uploaded to a GitHub repository, including:
 - `requirements.txt`
 - `models/random_forest_model.pkl`
 - `models/standard_scaler.pkl`
-- `models/label_encoder.pkl`
 
 **Prepare for Deployment:**  
 The `requirements.txt` file was added to include all required Python libraries such as Streamlit, pandas, numpy, and scikit-learn.
@@ -197,18 +196,19 @@ On Streamlit Cloud, I selected my GitHub repository, chose the `main` branch, an
 After deployment, Streamlit Cloud generated a public application URL that can be used to access and interact with the Telecom Customer Churn Prediction web app.
 
 **Deployed Application:**  
+
 ## Live App
 
-[Teleco_customer_churn_attrition_app][(https://harshalkapse21-telecom-customer-churn-attrition-pred-app-pcphb6.streamlit.app/#prediction-result)
-](https://harshalkapse21-telecom-customer-churn-attrition-pred-app-p92zdo.streamlit.app/)
-=======
+🚀 Telecom Customer Churn Predictor
+
+https://harshalkapse21-telecom-customer-churn-attrition-pred-app-p92zdo.streamlit.app/
+
 ### Dataset Usage
 
 1. Load the dataset using Python with Pandas.
 2. Explore and analyze the dataset attributes and patterns.
 3. Use the dataset for Telco Customer Churn Classification analysis.
 
----
 
 ### Connect With Me
 
